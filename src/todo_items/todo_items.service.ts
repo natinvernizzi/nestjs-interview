@@ -4,13 +4,10 @@ import { UpdateTodoItemDto } from './dtos/update-todo_item';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TodoItem } from './todo_item.entity';
-// review
-import { TodoList } from '../todo_lists/todo_list.entity';
 
 @Injectable()
 export class TodoItemsService {
   constructor(
-    @InjectRepository(TodoList)
     @InjectRepository(TodoItem)
     private readonly todoItemsRepository: Repository<TodoItem>,
   ) {}
