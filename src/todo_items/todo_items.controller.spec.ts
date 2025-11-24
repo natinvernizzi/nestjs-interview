@@ -112,4 +112,49 @@ describe('TodoItemsController', () => {
       expect(todoItemRepositoryMock.delete).toHaveBeenCalledWith(1);
     });
   });
+
+  describe('toggleComplete', () => {
+    it('should toggle completed status from false to true', async () => {
+      const mockTodoItem = { id: 1, name: 'Buy milk', completed: false };
+      const toggledTodoItem = { id: 1, name: 'Buy milk', completed: true };
+
+      todoItemRepositoryMock.findOneBy.mockResolvedValue(mockTodoItem);
+      todoItemRepositoryMock.save.mockResolvedValue(toggledTodoItem);
+
+      const result = await todoItemsController.toggleComplete({
+        id: 1,
+        todoListId: 1,
+      });
+
+      expect(result).toEqual(toggledTodoItem);
+      expect(result?.completed).toBe(true);
+    });
+
+    it('should toggle completed status from true to false', async () => {
+      const mockTodoItem = { id: 1, name: 'Buy milk', completed: true };
+      const toggledTodoItem = { id: 1, name: 'Buy milk', completed: false };
+
+      todoItemRepositoryMock.findOneBy.mockResolvedValue(mockTodoItem);
+      todoItemRepositoryMock.save.mockResolvedValue(toggledTodoItem);
+
+      const result = await todoItemsController.toggleComplete({
+        id: 1,
+        todoListId: 1,
+      });
+
+      expect(result).toEqual(toggledTodoItem);
+      expect(result?.completed).toBe(false);
+    });
+
+    it('should return null if item does not exist', async () => {
+      todoItemRepositoryMock.findOneBy.mockResolvedValue(null);
+
+      const result = await todoItemsController.toggleComplete({
+        id: 999,
+        todoListId: 1,
+      });
+
+      expect(result).toBeNull();
+    });
+  });
 });
