@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Put,
 } from '@nestjs/common';
@@ -44,5 +45,12 @@ export class TodoItemsController {
   @Delete('/:id')
   delete(@Param() param: { id: number }): Promise<void> {
     return this.todoItemsService.delete(param.id);
+  }
+
+  @Patch('/:id/:todoListId/toggle')
+  toggleComplete(
+    @Param() param: { id: number; todoListId: number },
+  ): Promise<TodoItem | null> {
+    return this.todoItemsService.toggleComplete(param.todoListId, param.id);
   }
 }
