@@ -4,11 +4,13 @@ import { TodoItemsService } from './todo_items.service';
 import { INestApplication } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { TodoItem } from './todo_item.entity';
+import { TodoList } from '../todo_lists/todo_list.entity';
 
 describe('TodoItemsController', () => {
   let app: INestApplication;
   let todoItemsController: TodoItemsController;
   let todoItemRepositoryMock: jest.Mocked<Record<string, jest.Mock>>;
+  let todoListRepositoryMock: jest.Mocked<Record<string, jest.Mock>>;
 
   beforeEach(async () => {
     todoItemRepositoryMock = {
@@ -19,6 +21,10 @@ describe('TodoItemsController', () => {
       create: jest.fn(),
     };
 
+    todoListRepositoryMock = {
+      findOneBy: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [TodoItemsController],
       providers: [
@@ -26,6 +32,10 @@ describe('TodoItemsController', () => {
         {
           provide: getRepositoryToken(TodoItem),
           useValue: todoItemRepositoryMock,
+        },
+        {
+          provide: getRepositoryToken(TodoList),
+          useValue: todoListRepositoryMock,
         },
       ],
     }).compile();
@@ -61,6 +71,13 @@ describe('TodoItemsController', () => {
       todoItemRepositoryMock.findOneBy.mockResolvedValue(mockTodoItem);
       const result = await todoItemsController.show({ id: 1, todoListId: 1 });
       expect(result).toEqual(mockTodoItem);
+    });
+
+    it('should throw NotFoundException when item does not exist', async () => {
+      todoItemRepositoryMock.findOneBy.mockResolvedValue(null);
+      await expect(
+        todoItemsController.show({ id: 999, todoListId: 1 }),
+      ).rejects.toThrow('TodoItem id 999 not found in list 1');
     });
   });
 
@@ -103,6 +120,15 @@ describe('TodoItemsController', () => {
 
       expect(result).toEqual(updatedTodoItem);
     });
+
+    it('should throw NotFoundException when item does not exist', async () => {
+      const updateDto = { name: 'Updated item' };
+      todoItemRepositoryMock.findOneBy.mockResolvedValue(null);
+
+      await expect(
+        todoItemsController.update({ id: 999 }, updateDto),
+      ).rejects.toThrow('TodoItem with id 999 not found');
+    });
   });
 
   describe('delete', () => {
@@ -111,13 +137,23 @@ describe('TodoItemsController', () => {
       await todoItemsController.delete({ id: 1 });
       expect(todoItemRepositoryMock.delete).toHaveBeenCalledWith(1);
     });
+
+    it('should throw NotFoundException when item does not exist', async () => {
+      todoItemRepositoryMock.delete.mockResolvedValue({ affected: 0 });
+
+      await expect(todoItemsController.delete({ id: 999 })).rejects.toThrow(
+        'TodoItem with id 999 not found',
+      );
+    });
   });
 
   describe('toggleComplete', () => {
     it('should toggle completed status from false to true', async () => {
+      const mockTodoList = { id: 1, name: 'Shopping List' };
       const mockTodoItem = { id: 1, name: 'Buy milk', completed: false };
       const toggledTodoItem = { id: 1, name: 'Buy milk', completed: true };
 
+      todoListRepositoryMock.findOneBy.mockResolvedValue(mockTodoList);
       todoItemRepositoryMock.findOneBy.mockResolvedValue(mockTodoItem);
       todoItemRepositoryMock.save.mockResolvedValue(toggledTodoItem);
 
@@ -131,9 +167,11 @@ describe('TodoItemsController', () => {
     });
 
     it('should toggle completed status from true to false', async () => {
+      const mockTodoList = { id: 1, name: 'Shopping List' };
       const mockTodoItem = { id: 1, name: 'Buy milk', completed: true };
       const toggledTodoItem = { id: 1, name: 'Buy milk', completed: false };
 
+      todoListRepositoryMock.findOneBy.mockResolvedValue(mockTodoList);
       todoItemRepositoryMock.findOneBy.mockResolvedValue(mockTodoItem);
       todoItemRepositoryMock.save.mockResolvedValue(toggledTodoItem);
 
@@ -146,15 +184,29 @@ describe('TodoItemsController', () => {
       expect(result?.completed).toBe(false);
     });
 
-    it('should return null if item does not exist', async () => {
+    it('should throw NotFoundException if list does not exist', async () => {
+      todoListRepositoryMock.findOneBy.mockResolvedValue(null);
+
+      await expect(
+        todoItemsController.toggleComplete({
+          id: 1,
+          todoListId: 999,
+        }),
+      ).rejects.toThrow('TodoList with id 999 not found');
+    });
+
+    it('should throw NotFoundException if item does not exist in the list', async () => {
+      const mockTodoList = { id: 1, name: 'Shopping List' };
+
+      todoListRepositoryMock.findOneBy.mockResolvedValue(mockTodoList);
       todoItemRepositoryMock.findOneBy.mockResolvedValue(null);
 
-      const result = await todoItemsController.toggleComplete({
-        id: 999,
-        todoListId: 1,
-      });
-
-      expect(result).toBeNull();
+      await expect(
+        todoItemsController.toggleComplete({
+          id: 999,
+          todoListId: 1,
+        }),
+      ).rejects.toThrow('TodoItem id 999 not found in list 1');
     });
   });
 });

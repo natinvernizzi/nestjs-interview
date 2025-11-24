@@ -23,9 +23,7 @@ export class TodoItemsController {
   }
 
   @Get('/:id/:todoListId')
-  show(
-    @Param() param: { id: number; todoListId: number },
-  ): Promise<TodoItem | null> {
+  show(@Param() param: { id: number; todoListId: number }): Promise<TodoItem> {
     return this.todoItemsService.get(param.todoListId, param.id);
   }
 
@@ -50,7 +48,7 @@ export class TodoItemsController {
   @Patch('/:id/:todoListId/toggle')
   toggleComplete(
     @Param() param: { id: number; todoListId: number },
-  ): Promise<TodoItem | null> {
+  ): Promise<TodoItem> {
     return this.todoItemsService.toggleComplete(param.todoListId, param.id);
   }
 }
