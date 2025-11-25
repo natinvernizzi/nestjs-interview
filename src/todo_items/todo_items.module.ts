@@ -11,4 +11,4 @@ import { TodoList } from 'src/todo_lists/todo_list.entity';
   providers: [TodoItemsService],
   exports: [TodoItemsService],
 })
-export class TodoListsModule {}
+export class TodoItemsModule {}
