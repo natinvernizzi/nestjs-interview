@@ -53,17 +53,17 @@ export class TodoItemsService {
         todoList: dto.todoList,
       });
       const saved = await this.todoItemsRepository.save(todoItem);
-      
+
       // Fetch with relations to return complete object
       const result = await this.todoItemsRepository.findOne({
         where: { id: saved.id },
         relations: ['todoList'],
       });
-      
+
       if (!result) {
         throw new NotFoundException(`Failed to create TodoItem`);
       }
-      
+
       return result;
     } catch (error) {
       throw new NotFoundException(
@@ -82,18 +82,26 @@ export class TodoItemsService {
       throw new NotFoundException(`TodoItem with id ${id} not found`);
     }
 
-    await this.todoItemsRepository.save({ id, ...dto } as TodoItem);
-    
+    // Merge the updates with the existing item
+    const updatedItem = {
+      ...existingItem,
+      ...dto,
+    };
+
+    await this.todoItemsRepository.save(updatedItem);
+
     // Return with relations
     const result = await this.todoItemsRepository.findOne({
       where: { id },
       relations: ['todoList'],
     });
-    
+
     if (!result) {
-      throw new NotFoundException(`TodoItem with id ${id} not found after update`);
+      throw new NotFoundException(
+        `TodoItem with id ${id} not found after update`,
+      );
     }
-    
+
     return result;
   }
 
@@ -123,17 +131,19 @@ export class TodoItemsService {
     // toggle the completed state
     item.completed = !item.completed;
     await this.todoItemsRepository.save({ ...item } as TodoItem);
-    
+
     // Return with relations
     const result = await this.todoItemsRepository.findOne({
       where: { id },
       relations: ['todoList'],
     });
-    
+
     if (!result) {
-      throw new NotFoundException(`TodoItem with id ${id} not found after toggle`);
+      throw new NotFoundException(
+        `TodoItem with id ${id} not found after toggle`,
+      );
     }
-    
+
     return result;
   }
 }
