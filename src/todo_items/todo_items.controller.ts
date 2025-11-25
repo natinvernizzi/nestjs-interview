@@ -18,7 +18,12 @@ export class TodoItemsController {
   constructor(private todoItemsService: TodoItemsService) {}
 
   @Get()
-  index(@Param() param: { todoListId: number }): Promise<TodoItem[]> {
+  index(): Promise<TodoItem[]> {
+    return this.todoItemsService.all();
+  }
+
+  @Get('/list/:todoListId')
+  getByList(@Param() param: { todoListId: number }): Promise<TodoItem[]> {
     return this.todoItemsService.all(param.todoListId);
   }
 

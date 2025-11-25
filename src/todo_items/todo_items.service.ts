@@ -15,16 +15,25 @@ export class TodoItemsService {
     private readonly todoListRepository: Repository<TodoList>,
   ) {}
 
-  async all(todoListId: number): Promise<TodoItem[]> {
-    return await this.todoItemsRepository.findBy({
-      todoList: { id: todoListId },
+  async all(todoListId?: number): Promise<TodoItem[]> {
+    if (todoListId) {
+      return await this.todoItemsRepository.find({
+        where: { todoList: { id: todoListId } },
+        relations: ['todoList'],
+      });
+    }
+    return await this.todoItemsRepository.find({
+      relations: ['todoList'],
     });
   }
 
   async get(todoListId: number, id: number): Promise<TodoItem> {
-    const todoItem = await this.todoItemsRepository.findOneBy({
-      id,
-      todoList: { id: todoListId },
+    const todoItem = await this.todoItemsRepository.findOne({
+      where: {
+        id,
+        todoList: { id: todoListId },
+      },
+      relations: ['todoList'],
     });
 
     if (!todoItem) {
@@ -43,7 +52,19 @@ export class TodoItemsService {
         completed: dto.completed,
         todoList: dto.todoList,
       });
-      return await this.todoItemsRepository.save(todoItem);
+      const saved = await this.todoItemsRepository.save(todoItem);
+      
+      // Fetch with relations to return complete object
+      const result = await this.todoItemsRepository.findOne({
+        where: { id: saved.id },
+        relations: ['todoList'],
+      });
+      
+      if (!result) {
+        throw new NotFoundException(`Failed to create TodoItem`);
+      }
+      
+      return result;
     } catch (error) {
       throw new NotFoundException(
         `TodoList with id ${dto.todoList.id} not found`,
@@ -52,13 +73,28 @@ export class TodoItemsService {
   }
 
   async update(id: number, dto: UpdateTodoItemDto): Promise<TodoItem> {
-    const existingItem = await this.todoItemsRepository.findOneBy({ id });
+    const existingItem = await this.todoItemsRepository.findOne({
+      where: { id },
+      relations: ['todoList'],
+    });
 
     if (!existingItem) {
       throw new NotFoundException(`TodoItem with id ${id} not found`);
     }
 
-    return await this.todoItemsRepository.save({ id, ...dto } as TodoItem);
+    await this.todoItemsRepository.save({ id, ...dto } as TodoItem);
+    
+    // Return with relations
+    const result = await this.todoItemsRepository.findOne({
+      where: { id },
+      relations: ['todoList'],
+    });
+    
+    if (!result) {
+      throw new NotFoundException(`TodoItem with id ${id} not found after update`);
+    }
+    
+    return result;
   }
 
   async delete(id: number): Promise<void> {
@@ -86,6 +122,18 @@ export class TodoItemsService {
 
     // toggle the completed state
     item.completed = !item.completed;
-    return await this.todoItemsRepository.save({ ...item } as TodoItem);
+    await this.todoItemsRepository.save({ ...item } as TodoItem);
+    
+    // Return with relations
+    const result = await this.todoItemsRepository.findOne({
+      where: { id },
+      relations: ['todoList'],
+    });
+    
+    if (!result) {
+      throw new NotFoundException(`TodoItem with id ${id} not found after toggle`);
+    }
+    
+    return result;
   }
 }
