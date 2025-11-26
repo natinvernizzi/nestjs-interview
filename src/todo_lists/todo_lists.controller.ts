@@ -22,7 +22,7 @@ export class TodoListsController {
   }
 
   @Get('/:todoListId')
-  show(@Param() param: { todoListId: number }): Promise<TodoList | null> {
+  show(@Param() param: { todoListId: number }): Promise<TodoList> {
     return this.todoListsService.get(param.todoListId);
   }
 

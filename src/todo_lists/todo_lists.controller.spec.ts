@@ -62,6 +62,13 @@ describe('TodoListsController', () => {
       const result = await todoListsController.show({ todoListId: 1 });
       expect(result).toEqual(mockTodoList);
     });
+
+    it('should throw NotFoundException when list does not exist', async () => {
+      todoListRepositoryMock.findOneBy.mockResolvedValue(null);
+      await expect(
+        todoListsController.show({ todoListId: 999 }),
+      ).rejects.toThrow('TodoList with id 999 not found');
+    });
   });
 
   describe('create', () => {
@@ -94,6 +101,15 @@ describe('TodoListsController', () => {
 
       expect(result).toEqual(updatedTodoList);
     });
+
+    it('should throw NotFoundException when list does not exist', async () => {
+      const updateDto = { name: 'Updated List' };
+      todoListRepositoryMock.findOneBy.mockResolvedValue(null);
+
+      await expect(
+        todoListsController.update({ todoListId: '999' }, updateDto),
+      ).rejects.toThrow('TodoList with id 999 not found');
+    });
   });
 
   describe('delete', () => {
@@ -101,6 +117,14 @@ describe('TodoListsController', () => {
       todoListRepositoryMock.delete.mockResolvedValue({ affected: 1 });
       await todoListsController.delete({ todoListId: 1 });
       expect(todoListRepositoryMock.delete).toHaveBeenCalledWith(1);
+    });
+
+    it('should throw NotFoundException when list does not exist', async () => {
+      todoListRepositoryMock.delete.mockResolvedValue({ affected: 0 });
+
+      await expect(
+        todoListsController.delete({ todoListId: 999 }),
+      ).rejects.toThrow('TodoList with id 999 not found');
     });
   });
 });
